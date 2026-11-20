@@ -1,0 +1,4 @@
+build/
+probe-results/
+__pycache__/
+CLAUDE.local.md

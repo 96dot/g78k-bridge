@@ -1,0 +1,17 @@
+# g78k-bridge: GameSir G7 Pro 8K -> virtual DualSense Edge for Steam Input.
+# Installed to /etc/udev/rules.d/71-g78k-bridge.rules by install.sh.
+# Must sort after 70-uaccess.rules (which tags every joystick for the logged-in user)
+# and before 73-seat-late.rules (which applies those tags).
+
+# Start the bridge whenever the controller (cable or 2.4 GHz dongle) appears, including at boot.
+ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="3537", ATTR{idProduct}=="10b8", TAG+="systemd", ENV{SYSTEMD_WANTS}+="g78k-bridge@%k.service"
+
+# Hide the controller's own gamepad nodes so Steam and games only see the bridge's
+# virtual DualSense Edge (otherwise it would show up twice). The bridge gives these
+# back (by creating /run/g78k-bridge/<node name>) when it stops or can't understand the controller.
+SUBSYSTEM=="hidraw", TEST!="/run/g78k-bridge/%k", ATTRS{idVendor}=="3537", ATTRS{idProduct}=="10b8", MODE="0600", GROUP="root", TAG-="uaccess"
+SUBSYSTEM=="input", KERNEL=="event*|js*", TEST!="/run/g78k-bridge/%k", ENV{ID_INPUT_JOYSTICK}=="1", ATTRS{idVendor}=="3537", ATTRS{idProduct}=="10b8", MODE="0600", GROUP="root", TAG-="uaccess"
+
+# Let Steam (the logged-in user, Desktop or Game Mode) open the virtual DualSense Edge.
+# Steam's own steam-devices rules already do this; kept for systems without them.
+SUBSYSTEM=="hidraw", KERNELS=="0003:054C:0DF2.*", DEVPATH=="/devices/virtual/misc/uhid/*", MODE="0660", TAG+="uaccess"
